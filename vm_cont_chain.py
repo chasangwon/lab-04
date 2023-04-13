@@ -1,7 +1,6 @@
-"""EE 250L Lab 04 Starter Code
-Run vm_pub.py in a separate terminal on your VM."""
-
 import paho.mqtt.client as mqtt
+import time
+import socket
 
 """This function (or "callback") will be executed when this client receives 
 a connection acknowledgement packet response from the server. """
@@ -14,13 +13,11 @@ def on_connect(client, userdata, flags, rc):
 
     print("Connected to server (i.e., broker) with result code "+str(rc))
     #replace user with your USC username in all subscriptions
-    client.subscribe("sangwonc/ipinfo")
+    client.subscribe("sangwonc/ping")
     
     #Add the custom callbacks by indicating the topic and the name of the callback handle
-    client.message_callback_add("sangwonc/ipinfo", on_message_from_ipinfo)
+    client.message_callback_add("sangwonc/ping", on_message_from_ping)
     
-    client.subscribe("sangwonc/date_time")
-    client.message_callback_add("sangwonc/date_time", on_message_from_datetime)
 
 
 """This object (functions are objects!) serves as the default callback for 
@@ -31,11 +28,16 @@ def on_message(client, userdata, msg):
     print("Default callback - topic: " + msg.topic + "   msg: " + str(msg.payload, "utf-8"))
 
 #Custom message callback.
-def on_message_from_ipinfo(client, userdata, message):
-   print("Custom callback  - IP Message: "+message.payload.decode())
+def on_message_from_ping(client, userdata, message):
+   print("Custom callback  - Ping: "+message.payload.decode())
+   num_recv = int(message.payload.decode())
+   num_recv += 1
+   
+   print("Publishing pong")
+   client.publish("sangwonc/pong", f"{num_recv}")
+   time.sleep(2)
+   
   
-def on_message_from_datetime(client, userdata, message):
-   print("Custom callback  - date and time "+message.payload.decode())
 
 
 
@@ -47,7 +49,7 @@ if __name__ == '__main__':
     client.on_message = on_message
     #attach the on_connect() callback function defined above to the mqtt client
     client.on_connect = on_connect
-
+    ip_address = "172.20.10.2"
     """Connect using the following hostname, port, and keepalive interval (in 
     seconds). We added "host=", "port=", and "keepalive=" for illustrative 
     purposes. You can omit this in python. For example:
@@ -58,7 +60,7 @@ if __name__ == '__main__':
     server in the event no messages have been published from or sent to this 
     client. If the connection request is successful, the callback attached to
     `client.on_connect` will be called."""    
-    client.connect(host="68.181.32.115", port=11000, keepalive=60)
+    client.connect(host=ip_address, port=1883, keepalive=60)
 
     """In our prior labs, we did not use multiple threads per se. Instead, we
     wrote clients and servers all in separate *processes*. However, every 
@@ -72,3 +74,6 @@ if __name__ == '__main__':
     programming is used under the hood), dispatches callbacks, and handles 
     reconnecting."""
     client.loop_forever()
+    
+    
+    
